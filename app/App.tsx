@@ -1,6 +1,8 @@
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
-import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { DeviceEventEmitter, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { nativeLoadError } from './modules/projector-native';
+import ErrorScreen, { ErrorBoundary } from './src/ErrorScreen';
 import { AppProvider } from './src/AppState';
 import Icon, { IconName } from './src/components/Icon';
 import ControlScreen from './src/screens/ControlScreen';
@@ -16,11 +18,30 @@ const TABS: { key: Tab; label: string; icon: IconName }[] = [
 ];
 
 export default function App() {
+  const [error, setError] = useState<string | null>((global as any).__appError || null);
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('appError', (m: string) => setError(m));
+    return () => sub.remove();
+  }, []);
+  if (error) return <ErrorScreen message={error} />;
+  return (
+    <ErrorBoundary>
+      <Main />
+    </ErrorBoundary>
+  );
+}
+
+function Main() {
   const [tab, setTab] = useState<Tab>('control');
   return (
     <AppProvider>
       <SafeAreaView style={st.root}>
         <StatusBar style="light" />
+        {nativeLoadError ? (
+          <Text selectable style={{ color: '#ff4d4f', fontSize: 11, padding: 8, marginTop: 28 }}>
+            Parte nativa não carregou: {nativeLoadError}
+          </Text>
+        ) : null}
         <View style={{ flex: 1, paddingTop: 28 }}>
           {tab === 'control' ? <ControlScreen /> : tab === 'watching' ? <WatchingScreen /> : <SettingsScreen />}
         </View>

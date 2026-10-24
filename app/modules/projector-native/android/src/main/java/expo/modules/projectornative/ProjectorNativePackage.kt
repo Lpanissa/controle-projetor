@@ -54,9 +54,18 @@ object CrashReport {
       try {
         val sw = java.io.StringWriter()
         e.printStackTrace(java.io.PrintWriter(sw))
-        java.io.File(app.filesDir, FILE).writeText(
-          "Android ${android.os.Build.VERSION.RELEASE} · ${android.os.Build.MODEL}\nThread: ${t.name}\n\n$sw"
-        )
+        val report = "Android ${android.os.Build.VERSION.RELEASE} · ${android.os.Build.MODEL}\nThread: ${t.name}\n\n$sw"
+        java.io.File(app.filesDir, FILE).writeText(report)
+        // também salva na pasta Downloads do celular, para dá pra mandar o arquivo
+        if (android.os.Build.VERSION.SDK_INT >= 29) {
+          val values = android.content.ContentValues().apply {
+            put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, "erro-controle-projetor.txt")
+            put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "text/plain")
+            put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, "Download")
+          }
+          val uri = app.contentResolver.insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+          if (uri != null) app.contentResolver.openOutputStream(uri)?.use { it.write(report.toByteArray()) }
+        }
       } catch (_: Throwable) {}
       previous?.uncaughtException(t, e)
     }

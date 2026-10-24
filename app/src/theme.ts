@@ -1,0 +1,16 @@
+export const C = {
+  bg: '#0b0d10',
+  card: '#15181d',
+  card2: '#1c2026',
+  line: '#262b33',
+  txt: '#e9edf2',
+  mut: '#8a93a0',
+  acc: '#4f8cff',
+  accBg: '#16233d',
+  accLine: '#2c4a80',
+  ok: '#2ecc71',
+  warn: '#f5a623',
+  red: '#ff4d4f',
+  redBg: '#2a1215',
+  redLine: '#5a1f24',
+};

@@ -178,16 +178,43 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // checa o Wi-Fi do projetor de tempos em tempos
+  // checa o Wi-Fi do projetor; se o IP mudou, procura sozinho na rede e salva o novo
+  const searching = useRef(false);
+  const autoFind = useCallback(async () => {
+    if (searching.current) return;
+    searching.current = true;
+    try {
+      const found = await projector.discover();
+      if (found) {
+        const next = { ...(settingsRef.current as Settings), projectorIp: found };
+        settingsRef.current = next;
+        setSettings(next);
+        saveSettings(next);
+        setWifiOk(true);
+      }
+    } finally {
+      searching.current = false;
+    }
+  }, []);
+
   useEffect(() => {
-    if (!settings?.projectorIp) return;
+    const ip = settings?.projectorIp;
+    if (!ip) {
+      autoFind();
+      return;
+    }
     refreshApps();
-    const t = setInterval(async () => {
-      const ok = !!(await projector.ping(settings.projectorIp));
+    let fails = 0;
+    const check = async () => {
+      const ok = !!(await projector.ping(ip));
       setWifiOk(ok);
-    }, 15000);
+      fails = ok ? 0 : fails + 1;
+      if (fails >= 2) autoFind();
+    };
+    check();
+    const t = setInterval(check, 15000);
     return () => clearInterval(t);
-  }, [settings?.projectorIp, refreshApps]);
+  }, [settings?.projectorIp, refreshApps, autoFind]);
 
   const updateSettings = useCallback((patch: Partial<Settings>) => {
     const next = { ...(settingsRef.current as Settings), ...patch };

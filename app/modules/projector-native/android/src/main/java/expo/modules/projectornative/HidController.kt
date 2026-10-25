@@ -104,7 +104,12 @@ object HidController {
 
     override fun onConnectionStateChanged(device: BluetoothDevice, state: Int) {
       when (state) {
-        BluetoothProfile.STATE_CONNECTED -> connected = device
+        BluetoothProfile.STATE_CONNECTED -> {
+          connected = device
+          // lembra o projetor para reconectar sozinho das próximas vezes
+          appContext?.getSharedPreferences("projetor_prefs", Context.MODE_PRIVATE)?.edit()
+            ?.putString("last_device", device.address)?.apply()
+        }
         BluetoothProfile.STATE_DISCONNECTED -> if (connected?.address == device.address) connected = null
       }
       notifyState()

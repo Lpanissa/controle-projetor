@@ -148,10 +148,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // conecta de novo ao último projetor quando o Bluetooth fica pronto
   useEffect(() => {
-    if (hid.state === 'ready') {
+    if (hid.state !== 'ready') return;
+    // tenta reconectar agora e a cada 15 s, até o projetor ligar e aceitar
+    const tryConnect = () => {
       const last = Native.lastDevice();
       if (last) Native.connect(last).catch(() => {});
-    }
+    };
+    tryConnect();
+    const t = setInterval(tryConnect, 15000);
+    return () => clearInterval(t);
   }, [hid.state]);
 
   const refreshApps = useCallback(async () => {

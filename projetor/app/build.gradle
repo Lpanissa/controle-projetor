@@ -17,10 +17,20 @@ android {
     versionName '1.1'
   }
 
+  // chave fixa: assim as atualizações instalam por cima, sem precisar desinstalar
+  signingConfigs {
+    ponte {
+      storeFile file('ponte.keystore')
+      storePassword 'ponte123'
+      keyAlias 'ponte'
+      keyPassword 'ponte123'
+    }
+  }
+
   buildTypes {
     release {
       minifyEnabled false
-      signingConfig signingConfigs.debug
+      signingConfig signingConfigs.ponte
     }
   }
 

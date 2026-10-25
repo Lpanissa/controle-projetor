@@ -65,12 +65,26 @@ export default function SettingsScreen() {
       <Card style={st.card}>
         <Text style={st.status}>{btLabel}</Text>
         <Text style={st.help}>
-          Para parear a primeira vez: toque em "Ficar visível", e no projetor vá em Configurações → Rede → Acessório
-          (Bluetooth) → procurar, e escolha este celular.
+          Para parear a primeira vez: toque em "Deixar o projetor visível" (vai aparecer uma pergunta na tela do
+          projetor, aceite). Depois, no Bluetooth do celular, procure o projetor e pareie. Por fim, toque em
+          "Aparelhos pareados" e conecte.
         </Text>
+        <Btn
+          label="Deixar o projetor visível"
+          primary
+          onPress={async () => {
+            if (!settings.projectorIp || !wifiOk) return toast('Primeiro conecte o projetor pelo Wi-Fi (abaixo)');
+            try {
+              await projector.makeVisible(settings.projectorIp);
+              toast('Aceite a pergunta na tela do projetor');
+            } catch {
+              toast('Não consegui falar com o projetor');
+            }
+          }}
+        />
         <View style={st.rowBtns}>
-          <Btn small label="Ficar visível" onPress={() => Native.requestDiscoverable()} style={{ flex: 1 }} />
-          <Btn small label="Celulares pareados" onPress={loadDevices} style={{ flex: 1 }} />
+          <Btn small label="Abrir Bluetooth do celular" onPress={() => Native.openBluetoothSettings()} style={{ flex: 1 }} />
+          <Btn small label="Aparelhos pareados" onPress={loadDevices} style={{ flex: 1 }} />
         </View>
         {devices.map((d) => (
           <Pressable

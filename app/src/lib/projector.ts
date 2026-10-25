@@ -43,6 +43,10 @@ export const projector = {
     await get(ip, `/open?${q}`);
   },
 
+  async makeVisible(ip: string) {
+    await get(ip, '/discoverable');
+  },
+
   async nowPlaying(ip: string): Promise<NowPlaying> {
     try {
       const r = await get(ip, '/nowplaying', 2000);

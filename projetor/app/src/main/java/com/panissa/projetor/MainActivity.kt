@@ -47,6 +47,9 @@ class MainActivity : Activity() {
     }
     root.addView(status)
 
+    root.addView(button("Deixar visível no Bluetooth (2 min)") {
+      if (!makeDiscoverable(this)) Toast.makeText(this, "O projetor não deixou ficar visível.", Toast.LENGTH_LONG).show()
+    })
     mediaBtn = button("Permitir mostrar o que está passando") { openNotificationAccess() }
     root.addView(mediaBtn)
     root.addView(button("Fechar (a Ponte continua ligada)") { finish() })

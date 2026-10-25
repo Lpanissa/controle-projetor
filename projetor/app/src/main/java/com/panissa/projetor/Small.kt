@@ -14,3 +14,14 @@ class BootReceiver : BroadcastReceiver() {
     BridgeService.start(context)
   }
 }
+
+/** Deixa o projetor visível no Bluetooth por 2 minutos (para o celular achar e parear). */
+fun makeDiscoverable(ctx: Context): Boolean = try {
+  val i = Intent(android.bluetooth.BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE)
+    .putExtra(android.bluetooth.BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 120)
+    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+  ctx.startActivity(i)
+  true
+} catch (e: Exception) {
+  false
+}

@@ -118,6 +118,7 @@ class BridgeService : Service() {
           "/launch" -> json(out, JSONObject().put("ok", launch(query["pkg"] ?: "")))
           "/open" -> json(out, JSONObject().put("ok", openUrl(query["url"] ?: "", query["pkg"])))
           "/nowplaying" -> json(out, nowPlaying())
+          "/discoverable" -> json(out, JSONObject().put("ok", onMain { makeDiscoverable(this) }))
           else -> send(out, 404, "text/plain", "nao encontrado".toByteArray())
         }
       } catch (e: Exception) {

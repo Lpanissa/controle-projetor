@@ -26,7 +26,8 @@ export default function IrWizard({ visible, onClose }: { visible: boolean; onClo
   const [pos, setPos] = useState(0);
   const [current, setCurrent] = useState<IrCode | null>(null);
   const [candidates, setCandidates] = useState<IrCode[]>([]);
-  const [ci, setCi] = useState(0);
+  const [testing, setTesting] = useState(false);
+  const [tested, setTested] = useState(false);
   const [addr, setAddr] = useState('');
   const [cmd, setCmd] = useState('');
   const stop = useRef(false);
@@ -49,9 +50,9 @@ export default function IrWizard({ visible, onClose }: { visible: boolean; onClo
       if (stop.current) return;
       setPos(i);
       setCurrent(q[i]);
-      history.current = [...history.current.slice(-11), q[i]];
+      history.current = [...history.current.slice(-39), q[i]];
       await sendCode(q[i]);
-      await new Promise((r) => setTimeout(r, 380));
+      await new Promise((r) => setTimeout(r, 600));
     }
     if (!stop.current) {
       toast('Testei todos os códigos comuns');
@@ -59,24 +60,54 @@ export default function IrWizard({ visible, onClose }: { visible: boolean; onClo
     }
   };
 
+  const startConfirm = (list: IrCode[]) => {
+    setCandidates(list);
+    setTested(false);
+    setPhase('confirm');
+  };
+
   const itTurnedOn = () => {
     stop.current = true;
-    setCandidates([...history.current].reverse());
-    setCi(0);
-    setPhase('confirm');
+    // o projetor demora para ligar: o código certo está entre os últimos ~40 enviados
+    startConfirm([...history.current]);
+  };
+
+  // faixa onde o projetor do Panissa já ligou uma vez (endereço 00, códigos 96 a B4)
+  const knownRange = (): IrCode[] => {
+    const out: IrCode[] = [];
+    for (let c = 0x96; c <= 0xb4; c++) out.push({ address: 0x00, command: c });
+    return out;
+  };
+
+  const half = () => candidates.slice(0, Math.ceil(candidates.length / 2));
+
+  // manda a primeira metade dos candidatos; se ligar, o código está nela
+  const testHalf = async () => {
+    setTesting(true);
+    for (const c of half()) {
+      await sendCode(c);
+      await new Promise((r) => setTimeout(r, 450));
+    }
+    setTesting(false);
+    setTested(true);
+  };
+
+  const answer = (turnedOn: boolean) => {
+    const h = half();
+    const next = turnedOn ? h : candidates.slice(h.length);
+    if (next.length === 0) {
+      toast('Não achei nesse grupo. Vou continuar a busca.');
+      startSweep(pos + 1);
+      return;
+    }
+    setCandidates(next);
+    setTested(false);
   };
 
   const save = (c: IrCode) => {
     Native.savePowerCode(c.address, c.command);
     refreshIr();
     setPhase('done');
-  };
-
-  const nextCandidate = () => {
-    if (ci + 1 >= candidates.length) {
-      toast('Nenhum desses. Vou continuar a busca.');
-      startSweep(pos + 1);
-    } else setCi(ci + 1);
   };
 
   const total = queue.current.length;
@@ -97,6 +128,7 @@ export default function IrWizard({ visible, onClose }: { visible: boolean; onClo
                 3. Toque em Começar. Quando o projetor <Text style={st.b}>ligar</Text>, toque em "Ligou!".
               </Text>
               <Btn label={pos > 0 ? 'Continuar de onde parou' : 'Começar'} primary onPress={() => startSweep(pos)} />
+              <Btn label="Testar a faixa onde ele já ligou (00: 96 a B4)" onPress={() => startConfirm(knownRange())} />
               <Btn label="Digitar código na mão" onPress={() => setPhase('manual')} />
               <Btn label="Fechar" onPress={onClose} />
             </>
@@ -112,20 +144,35 @@ export default function IrWizard({ visible, onClose }: { visible: boolean; onClo
               <Btn label="Pausar" onPress={() => { stop.current = true; setPhase('intro'); }} />
             </>
           ) : phase === 'confirm' ? (
-            <>
-              <Text style={st.p}>
-                Agora vamos achar qual código foi.{'\n'}
-                <Text style={st.b}>Desligue o projetor</Text> com o controle original e toque em Testar.
-              </Text>
-              <Text style={st.small}>
-                Teste {ci + 1} de {candidates.length}  ·  {hex(candidates[ci].address)} / {hex(candidates[ci].command)}
-              </Text>
-              <Btn label="Testar este" primary onPress={() => sendCode(candidates[ci])} />
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <Btn label="Não ligou" style={{ flex: 1 }} onPress={nextCandidate} />
-                <Btn label="Ligou, salvar" primary style={{ flex: 1 }} onPress={() => save(candidates[ci])} />
-              </View>
-            </>
+            candidates.length === 1 ? (
+              <>
+                <Text style={st.p}>
+                  Achei! Deve ser o código {hex(candidates[0].address)} / {hex(candidates[0].command)}.{'\n'}
+                  Desligue o projetor e toque em Testar para confirmar.
+                </Text>
+                <Btn label="Testar" primary onPress={() => sendCode(candidates[0])} />
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <Btn label="Não ligou" style={{ flex: 1 }} onPress={() => { toast('Vou continuar a busca.'); startSweep(pos + 1); }} />
+                  <Btn label="Ligou, salvar" primary style={{ flex: 1 }} onPress={() => save(candidates[0])} />
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={st.p}>
+                  Faltam <Text style={st.b}>{candidates.length}</Text> códigos possíveis. Vou testar metade de cada vez.{'\n\n'}
+                  1. Se o projetor estiver ligado, <Text style={st.b}>desligue</Text> com o controle original.{'\n'}
+                  2. Aponte o celular e toque em <Text style={st.b}>Testar</Text>.{'\n'}
+                  3. Espere uns 10 segundos e diga se ligou.
+                </Text>
+                <Btn label={testing ? 'Mandando...' : 'Testar'} primary onPress={() => !testing && testHalf()} />
+                {tested ? (
+                  <View style={{ flexDirection: 'row', gap: 10 }}>
+                    <Btn label="Não ligou" style={{ flex: 1 }} onPress={() => answer(false)} />
+                    <Btn label="Ligou" primary style={{ flex: 1 }} onPress={() => answer(true)} />
+                  </View>
+                ) : null}
+              </>
+            )
           ) : phase === 'done' ? (
             <>
               <Text style={st.p}>Código salvo! O botão vermelho, a notificação, o timer e as automações vão usar ele.</Text>

@@ -58,11 +58,16 @@ jobs:
       - name: Compilar APK
         run: gradle -p projetor assembleRelease --no-daemon
       - name: Renomear
-        run: cp projetor/app/build/outputs/apk/release/app-release.apk Projetor-Ponte.apk
+        run: |
+          cp projetor/app/build/outputs/apk/release/app-release.apk Projetor-Ponte.apk
+          grep -oP "versionCode\s+\K[0-9]+" projetor/app/build.gradle | head -1 > ponte-version.txt
+          cat ponte-version.txt
       - uses: actions/upload-artifact@v4
         with:
           name: projetor
-          path: Projetor-Ponte.apk
+          path: |
+            Projetor-Ponte.apk
+            ponte-version.txt
 
   testar:
     name: Testar abrindo num celular virtual
@@ -118,4 +123,5 @@ jobs:
           files: |
             Controle-do-Projetor.apk
             Projetor-Ponte.apk
+            ponte-version.txt
             erro-teste.txt

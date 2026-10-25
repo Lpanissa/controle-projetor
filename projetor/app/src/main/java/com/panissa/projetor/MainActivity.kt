@@ -52,6 +52,13 @@ class MainActivity : Activity() {
     })
     mediaBtn = button("Permitir mostrar o que está passando") { openNotificationAccess() }
     root.addView(mediaBtn)
+    root.addView(button("Procurar atualização da Ponte") {
+      Toast.makeText(this, "Procurando...", Toast.LENGTH_SHORT).show()
+      Thread {
+        val msg = Updater.check(this, showIfNone = true)
+        runOnUiThread { if (msg.isNotEmpty()) Toast.makeText(this, msg, Toast.LENGTH_LONG).show() }
+      }.start()
+    })
     root.addView(button("Fechar (a Ponte continua ligada)") { finish() })
     setContentView(root)
     mediaBtn.requestFocus()

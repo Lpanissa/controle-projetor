@@ -62,6 +62,14 @@ class BridgeService : Service() {
     startForeground(1, notification())
     running = true
     Thread({ serve() }, "ponte-http").start()
+    // procura atualização da Ponte agora e a cada 6 horas
+    val updater = object : Runnable {
+      override fun run() {
+        Thread { Updater.check(this@BridgeService) }.start()
+        main.postDelayed(this, 6 * 60 * 60 * 1000L)
+      }
+    }
+    main.postDelayed(updater, 30_000L)
   }
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY

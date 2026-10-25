@@ -107,7 +107,7 @@ class BridgeService : Service() {
   private fun handle(sock: Socket) {
     sock.use { s ->
       try {
-        s.soTimeout = 5000
+        s.soTimeout = 40000
         val reader = BufferedReader(InputStreamReader(s.getInputStream()))
         val line = reader.readLine() ?: return
         // consome os cabeçalhos
@@ -126,6 +126,7 @@ class BridgeService : Service() {
           "/launch" -> json(out, JSONObject().put("ok", launch(query["pkg"] ?: "")))
           "/open" -> json(out, JSONObject().put("ok", openUrl(query["url"] ?: "", query["pkg"])))
           "/nowplaying" -> json(out, nowPlaying())
+          "/pair" -> json(out, Pairer.pair(this, query["name"] ?: ""))
           "/discoverable" -> json(out, JSONObject().put("ok", onMain { makeDiscoverable(this) }))
           else -> send(out, 404, "text/plain", "nao encontrado".toByteArray())
         }

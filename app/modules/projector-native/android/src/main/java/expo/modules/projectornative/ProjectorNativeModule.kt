@@ -45,6 +45,8 @@ class ProjectorNativeModule : Module() {
 
     Function("bondedDevices") { HidController.bondedDevices() }
 
+    Function("myName") { HidController.myName() }
+
     AsyncFunction("connect") { address: String ->
       ctx.getSharedPreferences("projetor_prefs", Context.MODE_PRIVATE).edit()
         .putString("last_device", address).apply()

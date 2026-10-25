@@ -47,6 +47,12 @@ export const projector = {
     await get(ip, '/discoverable');
   },
 
+  /** Pede para o projetor procurar este celular pelo nome e parear. */
+  async pair(ip: string, phoneName: string): Promise<{ ok: boolean; msg: string; projectorName: string }> {
+    const r = await get(ip, `/pair?name=${encodeURIComponent(phoneName)}`, 40000);
+    return (await r.json()) as { ok: boolean; msg: string; projectorName: string };
+  },
+
   async nowPlaying(ip: string): Promise<NowPlaying> {
     try {
       const r = await get(ip, '/nowplaying', 2000);

@@ -161,6 +161,8 @@ object HidController {
 
   fun isBluetoothOn(): Boolean = adapter?.isEnabled == true
 
+  fun myName(): String = try { adapter?.name ?: "" } catch (e: Exception) { "" }
+
   private fun send(id: Int, data: ByteArray): Boolean {
     val h = hid ?: return false
     val d = connected ?: return false

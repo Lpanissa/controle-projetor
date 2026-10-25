@@ -29,6 +29,39 @@ export default function SettingsScreen() {
   const [token, setToken] = useState(settings.voiceMonkeyToken);
   const [testDevice, setTestDevice] = useState('modo-cinema');
   const [sleepLabel, setSleepLabel] = useState('');
+  const [pairing, setPairing] = useState('');
+
+  const pairWithProjector = async () => {
+    if (pairing) return;
+    if (!settings.projectorIp || !wifiOk) return toast('Primeiro o projetor precisa aparecer no Wi-Fi (abaixo)');
+    const me = Native.myName();
+    if (!me) return toast('Ligue o Bluetooth do celular');
+    try {
+      setPairing('Deixando o celular visível...');
+      Native.requestDiscoverable();
+      await new Promise((r) => setTimeout(r, 6000));
+      setPairing('O projetor está procurando o celular...');
+      const res = await projector.pair(settings.projectorIp, me);
+      toast(res.msg);
+      if (!res.ok) return;
+      setPairing('Confirme o pareamento no celular...');
+      // espera o pareamento aparecer e conecta
+      for (let i = 0; i < 30; i++) {
+        const dev = Native.bondedDevices().find((d) => d.name === res.projectorName);
+        if (dev) {
+          await Native.connect(dev.address);
+          toast(`Conectando a ${dev.name}`);
+          return;
+        }
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+      toast('Não vi o pareamento terminar. Toque em "Aparelhos pareados" e conecte.');
+    } catch {
+      toast('Não consegui falar com o projetor');
+    } finally {
+      setPairing('');
+    }
+  };
 
   const loadDevices = () => {
     try {
@@ -65,23 +98,10 @@ export default function SettingsScreen() {
       <Card style={st.card}>
         <Text style={st.status}>{btLabel}</Text>
         <Text style={st.help}>
-          Para parear a primeira vez: toque em "Deixar o projetor visível" (vai aparecer uma pergunta na tela do
-          projetor, aceite). Depois, no Bluetooth do celular, procure o projetor e pareie. Por fim, toque em
-          "Aparelhos pareados" e conecte.
+          Para parear a primeira vez, toque em "Parear com o projetor": o celular fica visível (aceite), o projetor
+          procura ele e pede o pareamento (confirme no celular). Depois conecta sozinho.
         </Text>
-        <Btn
-          label="Deixar o projetor visível"
-          primary
-          onPress={async () => {
-            if (!settings.projectorIp || !wifiOk) return toast('Primeiro conecte o projetor pelo Wi-Fi (abaixo)');
-            try {
-              await projector.makeVisible(settings.projectorIp);
-              toast('Aceite a pergunta na tela do projetor');
-            } catch {
-              toast('Não consegui falar com o projetor');
-            }
-          }}
-        />
+        <Btn label={pairing || 'Parear com o projetor'} primary onPress={pairWithProjector} />
         <View style={st.rowBtns}>
           <Btn small label="Abrir Bluetooth do celular" onPress={() => Native.openBluetoothSettings()} style={{ flex: 1 }} />
           <Btn small label="Aparelhos pareados" onPress={loadDevices} style={{ flex: 1 }} />

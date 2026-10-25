@@ -6,6 +6,7 @@ interface ProjectorNativeModule {
   startHid(): string;
   hidState(): { state: HidStateEvent['state']; name: string | null; bluetoothOn: boolean };
   bondedDevices(): { name: string; address: string }[];
+  myName(): string;
   connect(address: string): Promise<boolean>;
   lastDevice(): string | null;
   disconnect(): Promise<void>;
@@ -47,6 +48,7 @@ function load(): ProjectorNativeModule {
         if (prop === 'addListener') return () => ({ remove() {} });
         if (prop === 'hidState') return () => ({ state: 'off', name: null, bluetoothOn: false });
         if (prop === 'bondedDevices') return () => [];
+        if (prop === 'myName') return () => '';
         if (prop === 'hasIr' || prop === 'hasPowerCode') return () => false;
         if (prop === 'consumeShare' || prop === 'lastDevice') return () => null;
         if (prop === 'sleepAt') return () => 0;

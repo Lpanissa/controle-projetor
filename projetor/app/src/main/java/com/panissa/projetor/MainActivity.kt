@@ -47,9 +47,6 @@ class MainActivity : Activity() {
     }
     root.addView(status)
 
-    root.addView(button("Deixar visível no Bluetooth (2 min)") {
-      if (!makeDiscoverable(this)) Toast.makeText(this, "O projetor não deixou ficar visível.", Toast.LENGTH_LONG).show()
-    })
     mediaBtn = button("Permitir mostrar o que está passando") { openNotificationAccess() }
     root.addView(mediaBtn)
     root.addView(button("Procurar atualização da Ponte") {
@@ -62,6 +59,10 @@ class MainActivity : Activity() {
     root.addView(button("Fechar (a Ponte continua ligada)") { finish() })
     setContentView(root)
     mediaBtn.requestFocus()
+    // permissão para o projetor achar o celular no Bluetooth
+    if (!Pairer.hasLocation(this)) {
+      requestPermissions(arrayOf(android.Manifest.permission.ACCESS_COARSE_LOCATION, android.Manifest.permission.ACCESS_FINE_LOCATION), 7)
+    }
   }
 
   override fun onResume() {
